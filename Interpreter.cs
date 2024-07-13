@@ -31,10 +31,12 @@ namespace CommandRetriever
 
         }
 
+
+        // Handle ctrl+c
         private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
         {
             commandExecuterRunning = false;
-            
+
             int attempts = 20;
 
             while (attempts > 0 && _logClearThread.IsAlive && logCleanerRunning)
@@ -59,26 +61,54 @@ namespace CommandRetriever
             System.Environment.Exit(0);
         }
 
+        // Clean old log files
         static void LogCleaner()
         {
             while (true)
             {
                 logCleanerRunning = true;
 
+                if (!System.IO.Directory.Exists(@"\log"))
+                {
+                    System.IO.Directory.CreateDirectory(@"\log");
+                }
+                System.IO.DirectoryInfo directory = new DirectoryInfo(@"\logs");
+
+                System.IO.FileInfo[] files = directory.GetFiles();
+
+                foreach (FileInfo file in files)
+                {
+                    string date = file.Name.Substring(0, file.Name.IndexOf("log"));
+                    System.DateTime fileDate = DateTime.Parse(date);
+
+                    if (System.DateTime.Now.Date > fileDate.AddDays(10))
+                    {
+                        file.Delete();
+                    }
+                }
+
                 logCleanerRunning = false;
             }
         }
+
+        // Display and log program activities
 
         static void Logger(System.String log)
         {
             Logger(log);
 
-            using (StreamWriter sw = new StreamWriter(System.DateTime.Now.Date + "log.txt"))
+            if (!System.IO.Directory.Exists(@"\log"))
+            {
+                System.IO.Directory.CreateDirectory(@"\log");
+            }
+
+            using (StreamWriter sw = new StreamWriter(@"\logs\" + System.DateTime.Now.Month + "-" + System.DateTime.Now.Day + "-" + System.DateTime.Now.Year + "log.txt"))
             {
                 sw.WriteLine(System.DateTime.Now + " " + log);
             }
         }
 
+        // Read files and execute commands
         static void CommandRunner()
         {
             System.Boolean running = true;
@@ -209,7 +239,6 @@ namespace CommandRetriever
                                         client.DeleteFile(file.FullName);
                                     }
                                 }
-
                             }
                         }
 
